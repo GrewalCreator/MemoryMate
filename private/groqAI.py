@@ -6,27 +6,26 @@ import base64
 from groq import Groq
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-KEY_PATH = os.path.join(BASE_DIR, "..", ".env")
+CACHE_DIR = os.path.join(BASE_DIR, "cached_frames")
 load_dotenv(dotenv_path="./.env")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+client = Groq(api_key=GROQ_API_KEY)
 
 if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY not found in the environment variables. Ensure .env is correctly configured.")
 
-# Load the Haar cascade classifier for face detection
 face_classifier = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 )
 
-# Function to detect faces and draw bounding boxes
-def detect_bounding_box(vid, rectangle, frames):
+def detect_bounding_box(vid):
     gray_image = cv2.cvtColor(vid, cv2.COLOR_BGR2GRAY)
     faces = face_classifier.detectMultiScale(gray_image, 1.1, 5, minSize=(40, 40))
 
-    # Find the face closest to the center
     center_face = None
     distance_center_face = float('inf')
+
     for (x, y, w, h) in faces:
         face_mid_x = x + w / 2
         face_mid_y = y + h / 2
@@ -35,80 +34,78 @@ def detect_bounding_box(vid, rectangle, frames):
         distance = ((face_mid_x - center_x) ** 2 + (face_mid_y - center_y) ** 2) ** 0.5
         if distance < distance_center_face:
             distance_center_face = distance
-            center_face = (x, y, w, h)
+            center_face = (x, y, x + w, y + h)
 
     if center_face:
-        x, y, w, h = center_face
-        cv2.rectangle(vid, (x, y), (x + w, y + h), (0, 255, 0), 4)
-        if is_new_rectangle(rectangle, faces):
-            rectangle = (x - 100, y - 100, x + w + 100, y + h + 100)
-        cv2.rectangle(vid, (rectangle[0], rectangle[1]), (rectangle[2], rectangle[3]), (255, 0, 0), 4)
-        font_color = (255, 255, 255) if frames < 20 else (0, 0, 255)
-        cv2.putText(vid, f"Frames: {frames}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, font_color, 2, cv2.LINE_AA)
-    return faces, rectangle
+        x1, y1, x2, y2 = center_face
+        cv2.rectangle(vid, (x1, y1), (x2, y2), (0, 255, 0), 4)
+        expanded_x1 = max(0, x1 - 100)
+        expanded_y1 = max(0, y1 - 100)
+        expanded_x2 = min(vid.shape[1], x2 + 100)
+        expanded_y2 = min(vid.shape[0], y2 + 100)
+        cv2.rectangle(vid, (expanded_x1, expanded_y1), (expanded_x2, expanded_y2), (255, 0, 0), 2)
+    
+    face_path = os.path.join(CACHE_DIR, 'temp.jpg')
+    cv2.imwrite(face_path, vid)
 
-# Function to check if the detected rectangle is new
-def is_new_rectangle(old_rectangle, faces):
-    if old_rectangle is None:
-        return True
+    return center_face, vid
 
-    old_x, old_y, old_w, old_h = old_rectangle[0], old_rectangle[1], old_rectangle[2] - old_rectangle[0], old_rectangle[3] - old_rectangle[1]
-    for (new_x, new_y, new_w, new_h) in faces:
-        if new_x >= old_x and new_y >= old_y and (new_x + new_w) <= (old_x + old_w) and (new_y + new_h) <= (old_y + old_h):
-            return False
+def facial_recognition(video_frame, rectangle, frames, count):
+    rectangle2, processed_frame = detect_bounding_box(video_frame)
 
-    return True
-
-# Function to encode the image to base64
-def encode_image(image_path):
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
-
-# Main facial recognition loop
-def facial_recognition(video_frame, frames):
-    rectangle = None
-    count = 0
-    print("Im In")
-
-    # Process the video frame
-    _, rectangle2 = detect_bounding_box(video_frame, rectangle, frames)
-    if rectangle2 != None:
-        rectangle = rectangle2
-        frames = 0  # Reset frame count when a new rectangle is detected
+    if rectangle2:
+        if rectangle is None or not is_stable_rectangle(rectangle, rectangle2):
+            rectangle = rectangle2
+            frames = 0
+            print("New rectangle detected, resetting frames to 0")
+        else:
+            frames += 1
+            print(f"Stable rectangle detected, incrementing frames: {frames}")
     else:
-        frames += 1  # Increment frame count when the rectangle is stable
+        rectangle = None
+        frames = 0
+        print("No rectangle detected, resetting frames to 0")
 
-    print(frames)
-    # Save the detected face if present for 20+ frames
-    if frames >= 5 and rectangle:
-
-        x, y, w, h = rectangle
-        face = video_frame[y:h, x:w]
-        face_path = f"./frames/face_{count}.jpg"
+    if frames >= 20 and rectangle:
+        x1, y1, x2, y2 = rectangle
+        face = video_frame[y1:y2, x1:x2]
+        face_path = os.path.join(CACHE_DIR, 'face.jpg')
         cv2.imwrite(face_path, face)
         count += 1
-        frames = 0  # Reset the frame counter after saving the face
+        frames = 0
 
-        # Encode the face image and send it to Groq API
         base64_image = encode_image(face_path)
-
-        client = Groq(GROQ_API_KEY)
         chat_completion = client.chat.completions.create(
             model="llama-3.2-11b-vision-preview",
             messages=[
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "What's in this image?"},
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
-                        },
+                        {"type": "text",
+                         "text": "Describe the person infront of you and their environment?"},
+
+                        {"type": "image_url",
+                         "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
                     ],
                 }
             ]
         )
+        print(f"AI API Response: {chat_completion.choices[0].message.content}")
 
-        print(chat_completion.choices[0].message.content)
+    return processed_frame, rectangle, frames, count
 
-    return video_frame, frames
+def is_stable_rectangle(old_rect, new_rect, tolerance=500): # High Tolerance on purpse, need to find sweet spot
+    if old_rect is None or new_rect is None:
+        return False
+    ox1, oy1, ox2, oy2 = old_rect
+    nx1, ny1, nx2, ny2 = new_rect
+    return (
+        abs(ox1 - nx1) < tolerance and
+        abs(oy1 - ny1) < tolerance and
+        abs(ox2 - nx2) < tolerance and
+        abs(oy2 - ny2) < tolerance
+    )
+
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')

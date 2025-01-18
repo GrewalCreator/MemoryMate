@@ -13,11 +13,11 @@ export default function LiveVideoScreen() {
     try {
       const response = await fetch(API_GET_FRAMES_URL);
       const data = await response.json();
-
+  
       if (data.frames && data.frames.length > 0) {
         const lastFrame = data.frames[data.frames.length - 1];
-        const imageUrl = `data:image/jpeg;base64,${lastFrame}`;
-        setLiveFeed(imageUrl);
+        setLiveFeed(lastFrame);
+        
       } else {
         setLiveFeed(null); // No frames available
       }
@@ -25,16 +25,17 @@ export default function LiveVideoScreen() {
       console.error('Error fetching frames:', error);
       setLiveFeed(null); // Reset on error
     }
-
-    // Schedule the next request
+  
     if (!isPaused) {
-      timeoutRef.current = window.setTimeout(fetchFrames, 100); // ~10 FPS
+      timeoutRef.current = window.setTimeout(fetchFrames, 100); 
     }
   };
+  
+
 
   const startFetching = useCallback(() => {
     if (!timeoutRef.current) {
-      fetchFrames(); // Start fetching frames
+      fetchFrames(); 
     }
   }, [isPaused]);
 
@@ -65,8 +66,9 @@ export default function LiveVideoScreen() {
   return (
     <View style={styles.container}>
       {/* Video Feed */}
-      <View style={styles.videoContainer}> {/* Border wrapper */}
+      <View style={styles.videoContainer}>
         {liveFeed ? (
+          
           <Image
             source={{ uri: liveFeed }}
             style={styles.liveFeed}
@@ -78,6 +80,7 @@ export default function LiveVideoScreen() {
           </View>
         )}
       </View>
+
 
       {/* Controls */}
       <View style={styles.buttonContainer}>
