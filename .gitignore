@@ -2,3 +2,4 @@ private/__pycache__
 private/__pycache__/**
 private/received_frames/**
 private/cached_frames/**
+.vscode
