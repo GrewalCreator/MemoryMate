@@ -1,2 +1,8 @@
+# Development
 flask
 python-dotenv
+flask-cors
+groq
+python-dotenv
+opencv-python
+flask-socketio
