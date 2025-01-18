@@ -65,27 +65,29 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 # Main facial recognition loop
-def facial_recognition(video_frame):
+def facial_recognition(video_frame, frames):
     rectangle = None
-    frames = 0
     count = 0
+    print("Im In")
 
     # Process the video frame
-    faces, rectangle2 = detect_bounding_box(video_frame, rectangle, frames)
-    if rectangle2 != rectangle:
+    _, rectangle2 = detect_bounding_box(video_frame, rectangle, frames)
+    if rectangle2 != None:
         rectangle = rectangle2
-        frames = 0
+        frames = 0  # Reset frame count when a new rectangle is detected
     else:
-        frames += 1
+        frames += 1  # Increment frame count when the rectangle is stable
 
+    print(frames)
     # Save the detected face if present for 20+ frames
-    if frames > 20 and rectangle:
+    if frames >= 5 and rectangle:
+
         x, y, w, h = rectangle
         face = video_frame[y:h, x:w]
-        face_path = f"face_{count}.jpg"
+        face_path = f"./frames/face_{count}.jpg"
         cv2.imwrite(face_path, face)
         count += 1
-        frames = 0
+        frames = 0  # Reset the frame counter after saving the face
 
         # Encode the face image and send it to Groq API
         base64_image = encode_image(face_path)
@@ -109,4 +111,4 @@ def facial_recognition(video_frame):
 
         print(chat_completion.choices[0].message.content)
 
-    return video_frame
+    return video_frame, frames

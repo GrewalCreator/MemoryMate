@@ -6,3 +6,4 @@ groq
 python-dotenv
 opencv-python
 flask-socketio
+requests

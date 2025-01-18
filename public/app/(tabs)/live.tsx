@@ -1,112 +1,135 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Image, StyleSheet, Button } from 'react-native';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { View, Image, StyleSheet, Text, Button } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export default function LiveVideoScreen() {
+  const [liveFeed, setLiveFeed] = useState<string | null>(null); // Current frame
+  const [isPaused, setIsPaused] = useState(false); // Pause state
+  const timeoutRef = useRef<number | null>(null); // Timeout reference for scheduling requests
 
-export default function LiveScreen() {
-  const [liveFeed, setLiveFeed] = useState<string | null>(null);
-  const [isPaused, setIsPaused] = useState(false);
+  const API_GET_FRAMES_URL = 'http://10.0.0.98:5000/api/get-frames'; // Update with your backend's URL
 
-  const socketRef = useRef<WebSocket | null>(null);
+  const fetchFrames = async () => {
+    try {
+      const response = await fetch(API_GET_FRAMES_URL);
+      const data = await response.json();
 
-  const WEBSOCKET_URL = 'http://10.0.0.98:5000';
-
-  const startSocketConnection = () => {
-    if (socketRef.current) {
-      console.log('WebSocket already connected');
-      return;
+      if (data.frames && data.frames.length > 0) {
+        const lastFrame = data.frames[data.frames.length - 1];
+        const imageUrl = `data:image/jpeg;base64,${lastFrame}`;
+        setLiveFeed(imageUrl);
+      } else {
+        setLiveFeed(null); // No frames available
+      }
+    } catch (error) {
+      console.error('Error fetching frames:', error);
+      setLiveFeed(null); // Reset on error
     }
 
-    const socket = new WebSocket(WEBSOCKET_URL);
-    socketRef.current = socket;
-
-    socket.onopen = () => {
-      console.log('WebSocket connected');
-      socket.send(JSON.stringify({ type: 'request_frame' }));
-    };
-
-    socket.onmessage = (event) => {
-      const blob = new Blob([event.data], { type: 'image/jpeg' });
-      const objectUrl = URL.createObjectURL(blob);
-      setLiveFeed(objectUrl);
-    };
-
-    socket.onclose = () => {
-      console.log('WebSocket disconnected');
-      socketRef.current = null;
-    };
-
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-  };
-
-  const stopSocketConnection = () => {
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
-      console.log('WebSocket connection closed');
+    // Schedule the next request
+    if (!isPaused) {
+      timeoutRef.current = window.setTimeout(fetchFrames, 100); // ~10 FPS
     }
   };
 
-  const handlePauseResume = () => {
-    if (isPaused) {
-      setIsPaused(false);
-      startSocketConnection();
-    } else {
-      setIsPaused(true);
-      stopSocketConnection();
+  const startFetching = useCallback(() => {
+    if (!timeoutRef.current) {
+      fetchFrames(); // Start fetching frames
     }
-  };
+  }, [isPaused]);
+
+  const stopFetching = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
 
   useFocusEffect(
-    React.useCallback(() => {
-      startSocketConnection();
+    useCallback(() => {
+      // Only start fetching if the video is not paused
+      if (!isPaused) {
+        startFetching();
+      }
 
-      // Clean up when the screen loses focus
-      return () => {
-        stopSocketConnection();
-      };
-    }, []) // Dependency array ensures the effect is re-run only when the screen gains/loses focus
+      // Cleanup to stop fetching when the page loses focus
+      return () => stopFetching();
+    }, [isPaused, startFetching, stopFetching])
   );
 
+  useEffect(() => {
+    // Cleanup when the component unmounts
+    return () => stopFetching();
+  }, [stopFetching]);
+
   return (
-    <ThemedView style={styles.container}>
-      <View style={styles.liveFeedContainer}>
+    <View style={styles.container}>
+      {/* Video Feed */}
+      <View style={styles.videoContainer}> {/* Border wrapper */}
         {liveFeed ? (
-          <Image source={{ uri: liveFeed }} style={styles.liveFeed} />
+          <Image
+            source={{ uri: liveFeed }}
+            style={styles.liveFeed}
+            onError={() => console.error('Error rendering the image', liveFeed)}
+          />
         ) : (
-          <ThemedText type="subtitle">Loading live feed...</ThemedText>
+          <View style={styles.noVideoContainer}>
+            <Text style={styles.noVideoText}>No Video Input</Text>
+          </View>
         )}
       </View>
 
-      {/* Pause/Resume Button */}
+      {/* Controls */}
       <View style={styles.buttonContainer}>
-        <Button title={isPaused ? 'Resume' : 'Pause'} onPress={handlePauseResume} />
+        <Button
+          title={isPaused ? 'Resume' : 'Pause'}
+          onPress={() => {
+            setIsPaused(!isPaused);
+            if (isPaused) {
+              startFetching(); // Resume fetching
+            } else {
+              stopFetching(); // Pause fetching
+            }
+          }}
+        />
       </View>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-  },
-  liveFeedContainer: {
-    flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 16,
+    alignItems: 'center',
+    backgroundColor: '#000',
+  },
+  videoContainer: {
+    width: '90%',
+    height: '70%',
+    borderWidth: 2,
+    borderColor: '#fff',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#222',
   },
   liveFeed: {
     width: '100%',
-    height: 200,
+    height: '100%',
     resizeMode: 'contain',
   },
+  noVideoContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noVideoText: {
+    color: '#fff',
+    fontSize: 18,
+    textAlign: 'center',
+  },
   buttonContainer: {
-    marginVertical: 16,
+    marginTop: 20,
   },
 });
