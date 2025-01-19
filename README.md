@@ -18,19 +18,11 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![project_license][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
-
-
 
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/github_username/repo_name">
+  <a href="https://github.com/GrewalCreator/MemoryMate">
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
@@ -206,9 +198,12 @@ Distributed under the project_license. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email@email_client.com
+Vansh Shah - vsn495@gmail.com
+Aryan Khurana - aryankhurana1511@gmail.com
+Krins Vaghasia - krinskumar@gmail.com
+Gurtej Grewal - 
 
-Project Link: [https://github.com/github_username/repo_name](https://github.com/github_username/repo_name)
+Project Link: [https://github.com/GrewalCreator/MemoryMate](https://github.com/GrewalCreator/MemoryMate)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
