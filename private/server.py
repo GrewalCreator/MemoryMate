@@ -61,11 +61,15 @@ def live_feed():
 
             print(f'UNKNOWN: {new_user_url}')
 
-            frame_queue.append(frame)
+            
 
             # Save frame as image and store its path in approval queue
-            # image_filename = f"{UPLOAD_FOLDER}/frame_{int(time.time())}.jpg"
-            # cv2.imwrite(image_filename, frame)
+            #image_filename = f"{UPLOAD_FOLDER}/frame_{int(time.time())}.jpg"
+
+            image_filename = f"{UPLOAD_FOLDER}/frame.jpg"
+            cv2.imwrite(image_filename, frame)
+            frame_queue.append(image_filename)
+            print(image_filename)
 
             with image_lock:
                 if len(pending_approval) < QUEUE_SIZE and new_user_url:
@@ -73,6 +77,26 @@ def live_feed():
                     print(f'URL QUEQUE: {pending_approval}')
 
     return jsonify({"message": "Frame received"}), 200
+
+
+
+@app.route('/api/stream', methods=['GET'])
+def get_stream():
+    with frame_lock:
+        if not frame_queue:
+            return jsonify({"message": "No images available"}), 204  # No content available
+
+        image_path = frame_queue.popleft()
+        public_url = f"http://localhost:5000/uploads/{os.path.basename(image_path)}"
+
+    return jsonify({"image_path": public_url}), 200
+
+from flask import send_from_directory
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
 
 @app.route('/api/get-image', methods=['GET'])
 def get_image():
