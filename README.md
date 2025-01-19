@@ -26,10 +26,16 @@
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">project_title</h3>
+<h3 align="center">MemoryMate</h3>
 
   <p align="center">
-    project_description
+    Memory Mate is a personalized recollection assistant designed to support individuals experiencing memory challenges, particularly those associated with aging. It helps users preserve their daily experiences by providing comprehensive, context-rich snapshots of moments and events that might otherwise fade over time.
+
+At regular intervals, Memory Mate checks in with the user, offering a summary of their day's whereabouts and interactions. This ensures users can easily revisit and reflect on their daily experiences.
+
+The backend leverages Groq to make API calls to a language model, which processes contextual information from each snapshot. This data is then transformed into a structured itinerary of the user's day, providing an intuitive and accessible way to recall key moments.
+
+
     <br />
     <a href="https://github.com/github_username/repo_name"><strong>Explore the docs »</strong></a>
     <br />
@@ -201,7 +207,8 @@ Distributed under the project_license. See `LICENSE.txt` for more information.
 Vansh Shah - vsn495@gmail.com
 Aryan Khurana - aryankhurana1511@gmail.com
 Krins Vaghasia - krinskumar@gmail.com
-Gurtej Grewal - 
+Gurtej Grewal - gurtejgrewal685@gmail.com
+
 
 Project Link: [https://github.com/GrewalCreator/MemoryMate](https://github.com/GrewalCreator/MemoryMate)
 
