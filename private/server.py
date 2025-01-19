@@ -6,6 +6,9 @@ import numpy as np
 from threading import Lock
 from collections import deque
 from groqAI import facial_recognition
+from database.mongo import MongoDBClient
+import urllib.request
+
 import requests
 import time
 import threading
@@ -21,8 +24,6 @@ SAVED_IMG = 0
 
 FRAME_RATE_LIMIT = 1 / 15
 last_processed_time = 0
-
-
 
 
 @app.route('/api/live-feed', methods=['POST'])
@@ -78,4 +79,20 @@ def get_frames():
 
 
 if __name__ == "__main__":
+    # before we run the app, we cache the images
+    mongoClient = MongoDBClient()
+    allPhotos = mongoClient.getAllPhotos()
+    print(allPhotos)
+    # Ensure the directory exists
+    output_dir = 'images'
+    os.makedirs(output_dir, exist_ok=True)
+
+    index = 0  # Assuming index starts from 0
+    for photo in allPhotos:
+        img_url = requests.get(photo["images"][0]).content
+        img_name = os.path.join(output_dir, f"{index}.jpg")
+        with open(img_name, 'wb') as img_file:
+            img_file.write(img_url)
+        index += 1
+
     app.run(host='0.0.0.0', port=5000)
