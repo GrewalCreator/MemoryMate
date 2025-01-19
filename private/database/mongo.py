@@ -23,13 +23,30 @@ class MongoDBClient:
         return user["places"] if user else None
 
     def addUser(self, user_data):
-      result = self.users_collection.insert_one(user_data)
-      return result.inserted_id
+        result = self.users_collection.insert_one(user_data)
+        return result.inserted_id
 
-    def addPhotoForUser(self, user_id, person):
+    def addPhotoForUser(self, name, description, images):
+        user = self.getUser()
+        user_id = user["_id"] if user else None
+        person = {
+            "name": name,
+            "description": description,
+            "images": images
+        }
         result = self.users_collection.update_one(
             {"_id": user_id},
             {"$push": {"people": person}}
+        )
+        return result.modified_count
+    
+    def addPhotoForExistingUser(self, index, image):
+        user = self.getUser()
+        user_id = user["_id"] if user else None
+        user["people"][index]["images"].append(image)
+        result = self.users_collection.update_one(
+            {"_id": user_id},
+            {"$set": {"people": user["people"]}}
         )
         return result.modified_count
 

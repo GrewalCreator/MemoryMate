@@ -12,7 +12,7 @@ mongoClient = MongoDBClient()
 cloudinaryClient = CloudinaryDBClient()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CACHE_DIR = os.path.join(BASE_DIR, "cached_frames")
+CACHE_DIR = os.path.join(BASE_DIR, "images")
 load_dotenv(dotenv_path="./.env")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -51,29 +51,35 @@ def detect_bounding_box(vid):
         expanded_y2 = min(vid.shape[0], y2 + 100)
         cv2.rectangle(vid, (expanded_x1, expanded_y1), (expanded_x2, expanded_y2), (255, 0, 0), 2)
     
-    face_path = os.path.join(CACHE_DIR, 'temp.jpg')
+    face_path = os.path.join(CACHE_DIR, 'tempp.jpg')
     cv2.imwrite(face_path, vid)
-
     return center_face, vid
 
 def facial_recognition(video_frame, rectangle, frames, count):
+    print("starting the check")
     rectangle2, processed_frame = detect_bounding_box(video_frame)
-
+    print("check ended ", rectangle2)
     if rectangle2:
-        if rectangle is None or not is_stable_rectangle(rectangle, rectangle2):
-            rectangle = rectangle2
-            frames = 0
-            print("New rectangle detected, resetting frames to 0")
-        else:
-            frames += 1
-            print(f"Stable rectangle detected, incrementing frames: {frames}")
-    else:
-        rectangle = None
-        frames = 0
-        print("No rectangle detected, resetting frames to 0")
+        rectangle = rectangle2
+    #     if rectangle is None or not is_stable_rectangle(rectangle, rectangle2):
+    #         rectangle = rectangle2
+    #         frames = 0
+    #         print("New rectangle detected, resetting frames to 0")
+    #     else:
+    #         frames += 1
+    #         print(f"Stable rectangle detected, incrementing frames: {frames}")
+    # else:
+    #     rectangle = None
+    #     frames = 0
+    #     print("No rectangle detected, resetting frames to 0")
 
-    if frames >= 20 and rectangle:
+    # if frames >= 1 and rectangle:
+        print("face found")
         x1, y1, x2, y2 = rectangle
+        x1 = max(0, x1 - 100)
+        y1 = max(0, y1 - 100)
+        x2 = min(video_frame.shape[1], x2 + 100)
+        y2 = min(video_frame.shape[0], y2 + 100)
         face = video_frame[y1:y2, x1:x2]
         face_path = os.path.join(CACHE_DIR, 'face.jpg')
         cv2.imwrite(face_path, face)
@@ -107,8 +113,18 @@ def facial_recognition(video_frame, rectangle, frames, count):
             filePath = os.path.join(output_dir, f"{index}.jpg")
             if not os.path.exists(filePath):
                 break
-            result = DeepFace.verify(face_path, filePath)
+            try:
+                result = DeepFace.verify(face_path, filePath)
+            except Exception as e:
+                print(f"Error in DeepFace.verify: {e}")
+                break
             print(result)
+            if result["verified"]:
+                print("Face found and match found")
+                found = True
+                image_url = cloudinaryClient.upload_image("abc", "people", base64_image)
+                mongoClient.addPhotoForExistingUser(index, image_url)
+                break
 
             # if match is found, found == true and additional logic
 
@@ -116,8 +132,13 @@ def facial_recognition(video_frame, rectangle, frames, count):
 
         if not found:
             # make a new entry in the mongo db database
-            image_url = cloudinaryClient.upload_image("abc", "jpg", base64_image)
-            mongoClient.addPhoto(image_url)
+            print("Face found but no match found")
+            image_url = cloudinaryClient.upload_image("abc", "people", base64_image)
+            MongoDBClient.addPhotoForUser(None, None, [image_url])
+
+            # add this image to the local cache
+            face_path = os.path.join(CACHE_DIR, str(index) + '.jpg')
+            cv2.imwrite(face_path, face)
 
 
 
