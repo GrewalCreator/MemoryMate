@@ -88,12 +88,12 @@ def serve_image(filename):
 def approve_image():
     """Handle image approval from frontend."""
     data = request.get_json()
-    if not data or 'name' not in data or 'description' not in data or 'imageUrl' not in data:
+    if not data or 'name' not in data or 'description' not in data or 'relation' not in data:
         return jsonify({"error": "Missing fields"}), 400
 
     # Process the approval (simulate saving the approved image details)
     mongoDBClient = MongoDBClient()
-    mongoDBClient.approve(data['name'], data['description'])
+    mongoDBClient.approve(data['name'], data['description'], data['relation'])
 
     return jsonify({"message": "Image approved successfully"}), 200
 
@@ -103,7 +103,6 @@ def deny_image():
     data = request.get_json()
     if not data or 'action' not in data:
         return jsonify({"error": "Invalid request"}), 400
-
     
     mongoDBClient = MongoDBClient()
     mongoDBClient.deny()
@@ -115,6 +114,8 @@ def deny_image():
 def get_images():
     mongoClient = MongoDBClient()
     allPhotos = mongoClient.getAllPhotos()
+    for photo in allPhotos:
+        imageUrl = photo["images"][0]
     return jsonify(allPhotos)
 
 if __name__ == "__main__":
