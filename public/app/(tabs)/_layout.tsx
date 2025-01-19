@@ -9,6 +9,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '../auth/authContext'; // Access auth context
 
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { token } = useAuth(); // Access token from auth context
@@ -33,6 +34,14 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="approvalRequest"
+        options={{
+          title: 'Requests',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
         }}
       />
 
