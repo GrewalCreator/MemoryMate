@@ -3,7 +3,13 @@ import cv2
 from dotenv import load_dotenv
 import numpy as np
 import base64
+from deepface import DeepFace
 from groq import Groq
+from database.mongo import MongoDBClient
+from database.cloudinarydb import CloudinaryDBClient
+
+mongoClient = MongoDBClient()
+cloudinaryClient = CloudinaryDBClient()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_DIR = os.path.join(BASE_DIR, "cached_frames")
@@ -91,6 +97,29 @@ def facial_recognition(video_frame, rectangle, frames, count):
             ]
         )
         print(f"AI API Response: {chat_completion.choices[0].message.content}")
+
+        # check this image off of the other cached images
+        # result = DeepFace.verify("1.jpeg", "2.jpeg"
+        index = 0
+        output_dir = 'images'
+        found = False
+        while True:
+            filePath = os.path.join(output_dir, f"{index}.jpg")
+            if not os.path.exists(filePath):
+                break
+            result = DeepFace.verify(face_path, filePath)
+            print(result)
+
+            # if match is found, found == true and additional logic
+
+            index += 1
+
+        if not found:
+            # make a new entry in the mongo db database
+            image_url = cloudinaryClient.upload_image("abc", "jpg", base64_image)
+            mongoClient.addPhoto(image_url)
+
+
 
     return processed_frame, rectangle, frames, count
 
