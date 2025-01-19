@@ -13,7 +13,8 @@ const MAPPING = {
   'chevron.right': 'chevron-right',
   'livephoto.play': 'play-circle',
   "person.circle": "account-circle",
-  'list.bullet': 'format-list-bulleted'
+  'list.bullet': 'format-list-bulleted',
+  'rectangle.grid.2x2.fill': 'dashboard',
 } as Partial<
   Record<
     import('expo-symbols').SymbolViewProps['name'],
