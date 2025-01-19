@@ -39,4 +39,3 @@ class MongoDBClient:
             {"$push": {"people": place}}
         )
         return result.modified_count
-    

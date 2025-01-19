@@ -1,6 +1,6 @@
 import datetime
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, Response, request, jsonify
 import cv2
 import numpy as np
 from threading import Lock
@@ -54,19 +54,27 @@ def live_feed():
     return "Frame received", 200
 
 
-
+def generate_stream():
+    """Stream frames as a multipart/x-mixed-replace response."""
+    while True:
+        with frame_lock:
+            if frame_queue:
+                frame = frame_queue[-1]  # Get the latest frame
+                _, buffer = cv2.imencode('.jpg', frame)
+                frame_bytes = buffer.tobytes()
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+            else:
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + b'\r\n')
 
 
 
 @app.route('/api/get-frames', methods=['GET'])
 def get_frames():
-    with frame_lock:
-        frames = list(frame_queue)
-        encoded_frames = []
-        for frame in frames:
-            _, buffer = cv2.imencode('.jpg', frame)
-            encoded_frames.append(buffer.tobytes())
-    return jsonify({"frames": [f"data:image/jpeg;base64,{frame.hex()}" for frame in encoded_frames]})
+    """Stream video frames to the client."""
+    return Response(generate_stream(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
 
 
 if __name__ == "__main__":
