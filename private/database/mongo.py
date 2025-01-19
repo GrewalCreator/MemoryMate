@@ -57,19 +57,20 @@ class MongoDBClient:
         )
         return result.modified_count
     
-    def approve(self, name, description):
+    def approve(self, name, description, relation):
         user = self.getUser()
         user_id = user["_id"] if user else None
     
         for peep in user["people"]:
-            if not peep["name"]:
+            if not peep.get("name"):
                 peep["name"] = name
                 peep["description"] = description
+                peep["relation"] = relation
                 break
 
         result = self.users_collection.update_one(
             {"_id": user_id},
-            {"$set": {"people": user.people}}
+            {"$set": {"people": user["people"]}}
         )
         return result.modified_count
 
