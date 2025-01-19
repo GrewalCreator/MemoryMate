@@ -1,3 +1,5 @@
+// Dashboard.tsx
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -7,17 +9,19 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  Alert
+  Alert,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 // Define TypeScript interface for the person data
 interface Person {
   id?: number;
-  imageUrl: string;
+  images: string[];
   name: string;
-  relation: string;
-  description: string;
+  relation?: string;
+  description?: string;
 }
 
 export default function Dashboard() {
@@ -31,15 +35,58 @@ export default function Dashboard() {
   const fetchPeople = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/get-images');
+      const response = await fetch(`http://localhost:5000/get-images`);
       if (!response.ok) throw new Error('Failed to fetch data');
 
       const data = await response.json();
 
-      if (Array.isArray(data) && data.every(person => 'id' in person && person.id !== undefined)) {
-        setPeople(data);
+      if (Array.isArray(data)) {
+        const formattedData: Person[] = data.map((person, index) => {
+          // Initialize default values
+          const name = person.name ? person.name.trim() : 'Unknown';
+          const relation = person.relation ? person.relation.trim() : 'Unknown';
+          const description = person.description
+            ? person.description.trim()
+            : 'No description available';
+
+          // Process images
+          let images: string[] = [];
+
+          if (Array.isArray(person.images)) {
+            person.images.forEach((imageString) => {
+              if (typeof imageString === 'string') {
+                // Remove trailing newline characters and split by newline if multiple URLs are present
+                const cleanedString = imageString.replace(/\n/g, '').trim();
+                if (cleanedString) {
+                  const splitImages = cleanedString.split('http').filter(Boolean);
+                  splitImages.forEach((img, imgIndex) => {
+                    const url = img.startsWith('://') ? `http${img}` : `http://${img}`;
+                    if (url.startsWith('http')) {
+                      images.push(url);
+                    }
+                  });
+                }
+              }
+            });
+          }
+
+          // Remove any potential duplicates and invalid URLs
+          images = Array.from(new Set(images)).filter((url) => {
+            return url.startsWith('http://') || url.startsWith('https://');
+          });
+
+          return {
+            id: person.id || index,
+            images,
+            name,
+            relation,
+            description,
+          };
+        });
+
+        setPeople(formattedData);
       } else {
-        throw new Error('Invalid data format: Missing ID field');
+        throw new Error('Invalid data format');
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch data');
@@ -55,11 +102,28 @@ export default function Dashboard() {
   };
 
   const renderItem = ({ item }: { item: Person }) => (
-    <TouchableOpacity style={styles.card}>
-      <Image source={{ uri: item.imageUrl }} style={styles.image} />
-      <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.relation}>{item.relation}</Text>
-      <Text style={styles.description}>{item.description}</Text>
+    <TouchableOpacity style={styles.card} activeOpacity={0.8}>
+      {item.images.length > 0 ? (
+        <Image
+          source={{ uri: item.images[0] }}
+          style={styles.image}
+          resizeMode="cover"
+          onError={(e) => {
+            console.error(`Failed to load image for ${item.name}:`, e.nativeEvent.error);
+          }}
+        />
+      ) : (
+        <View style={[styles.image, styles.placeholder]}>
+          <Ionicons name="image-off" size={40} color="#555" />
+        </View>
+      )}
+      <View style={styles.cardContent}>
+        <Text style={styles.name}>{item.name}</Text>
+        {item.relation !== 'Unknown' && <Text style={styles.relation}>{item.relation}</Text>}
+        <Text style={styles.description} numberOfLines={3}>
+          {item.description}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 
@@ -75,7 +139,7 @@ export default function Dashboard() {
   return (
     <View style={styles.container}>
       {/* Refresh Button in Top Right */}
-      <TouchableOpacity style={styles.refreshButton} onPress={fetchPeople}>
+      <TouchableOpacity style={styles.refreshButton} onPress={fetchPeople} accessibilityLabel="Refresh">
         <Ionicons name="refresh" size={28} color="#fff" />
       </TouchableOpacity>
 
@@ -83,8 +147,12 @@ export default function Dashboard() {
         data={people}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
-        showsVerticalScrollIndicator={false}
+        horizontal
+        showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.listContainer}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        snapToInterval={Dimensions.get('window').width * 0.8 + 20} // Adjust based on card width and margin
       />
     </View>
   );
@@ -93,7 +161,8 @@ export default function Dashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingTop: 60, // Adjusted to account for the refresh button
+    paddingHorizontal: 10,
     backgroundColor: '#121212',
   },
   loadingContainer: {
@@ -104,50 +173,60 @@ const styles = StyleSheet.create({
   loadingText: {
     color: '#fff',
     marginTop: 10,
+    fontSize: 16,
   },
   refreshButton: {
     position: 'absolute',
-    top: 40,
+    top: 20,
     right: 20,
     backgroundColor: '#1E90FF',
     padding: 10,
     borderRadius: 30,
     zIndex: 1,
+    elevation: 5,
+  },
+  listContainer: {
+    paddingVertical: 20,
   },
   card: {
     backgroundColor: '#1e1e1e',
-    borderRadius: 10,
+    borderRadius: 15,
     padding: 15,
-    marginBottom: 15,
-    alignItems: 'center',
+    marginRight: 20,
+    width: Dimensions.get('window').width * 0.8,
     shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 8,
   },
   image: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 10,
+    width: '100%',
+    height: 180,
+    borderRadius: 10,
+    backgroundColor: '#333',
+  },
+  placeholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardContent: {
+    marginTop: 15,
   },
   name: {
-    fontSize: 20,
+    fontSize: 22,
     color: '#fff',
     fontWeight: 'bold',
   },
   relation: {
     fontSize: 16,
     color: '#aaa',
-    marginBottom: 5,
+    marginTop: 5,
   },
   description: {
     fontSize: 14,
     color: '#ccc',
-  },
-  listContainer: {
-    paddingBottom: 20,
+    marginTop: 10,
+    lineHeight: 20,
   },
 });
-
