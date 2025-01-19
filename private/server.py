@@ -64,8 +64,8 @@ def live_feed():
             frame_queue.append(frame)
 
             # Save frame as image and store its path in approval queue
-            image_filename = f"{UPLOAD_FOLDER}/frame_{int(time.time())}.jpg"
-            cv2.imwrite(image_filename, frame)
+            # image_filename = f"{UPLOAD_FOLDER}/frame_{int(time.time())}.jpg"
+            # cv2.imwrite(image_filename, frame)
 
             with image_lock:
                 if len(pending_approval) < QUEUE_SIZE and new_user_url:
@@ -100,7 +100,8 @@ def approve_image():
         return jsonify({"error": "Missing fields"}), 400
 
     # Process the approval (simulate saving the approved image details)
-    print("Approved:", data)
+    mongoDBClient = MongoDBClient()
+    mongoDBClient.approve(data['name'], data['description'])
 
     return jsonify({"message": "Image approved successfully"}), 200
 
@@ -111,7 +112,9 @@ def deny_image():
     if not data or 'action' not in data:
         return jsonify({"error": "Invalid request"}), 400
 
-    print("Image denied")
+    
+    mongoDBClient = MongoDBClient()
+    mongoDBClient.deny()
 
     return jsonify({"message": "Image denied successfully"}), 200
 

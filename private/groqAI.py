@@ -104,6 +104,8 @@ def facial_recognition(video_frame, rectangle, frames, count):
                 image_url = cloudinaryClient.upload_image("abc", "people", base64_image)
                 mongoClient.addPhotoForExistingUser(index, image_url)
                 break
+
+            # if match is found, found == true and additional logic
             index += 1
 
         if not found:
