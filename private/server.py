@@ -1,4 +1,5 @@
 import cv2
+from flask_cors import CORS
 import numpy as np
 from threading import Lock
 from collections import deque
@@ -12,6 +13,7 @@ import os
 from database.mongo import MongoDBClient
 
 app = Flask(__name__)
+CORS(app)
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'  # Directory to store images
@@ -42,6 +44,7 @@ def live_feed():
     video_stream = video_file.read()
     nparr = np.frombuffer(video_stream, np.uint8)
     frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    new_user_url = ""
 
     if frame is not None:
         if not hasattr(live_feed, "rectangle"):
@@ -54,7 +57,10 @@ def live_feed():
         with frame_lock:
             frame, live_feed.rectangle, live_feed.frames, live_feed.count, new_user_url = facial_recognition(
                 frame, live_feed.rectangle, live_feed.frames, live_feed.count
-            )
+            ) or (frame, None, 0, 0, None)
+
+            print(f'UNKNOWN: {new_user_url}')
+
             frame_queue.append(frame)
 
             # Save frame as image and store its path in approval queue
@@ -64,11 +70,13 @@ def live_feed():
             with image_lock:
                 if len(pending_approval) < QUEUE_SIZE and new_user_url:
                     pending_approval.append(new_user_url)
+                    print(f'URL QUEQUE: {pending_approval}')
 
     return jsonify({"message": "Frame received"}), 200
 
 @app.route('/api/get-image', methods=['GET'])
 def get_image():
+    print("LOOKING FOR NEW PERSON")
     """Send the next image URL to the frontend for approval."""
     with image_lock:
         if not pending_approval:
@@ -113,6 +121,17 @@ def get_images():
     mongoClient = MongoDBClient()
     allPhotos = mongoClient.getAllPhotos()
     return jsonify(allPhotos)
+
+@app.route('/api/get-new-images', methods=['GET'])
+def get_imagees():
+    mongoClient = MongoDBClient()
+    allPhotos = mongoClient.getAllPhotos()
+    new = None
+    for photo in allPhotos:
+        if photo["name"] is None:
+            new = photo["images"][0]
+            break
+    return jsonify(new)
 
 if __name__ == "__main__":
     # before we run the app, we cache the images

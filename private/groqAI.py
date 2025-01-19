@@ -45,35 +45,20 @@ def detect_bounding_box(vid):
     if center_face:
         x1, y1, x2, y2 = center_face
         cv2.rectangle(vid, (x1, y1), (x2, y2), (0, 255, 0), 4)
-        expanded_x1 = max(0, x1 - 100)
-        expanded_y1 = max(0, y1 - 100)
-        expanded_x2 = min(vid.shape[1], x2 + 100)
-        expanded_y2 = min(vid.shape[0], y2 + 100)
-        cv2.rectangle(vid, (expanded_x1, expanded_y1), (expanded_x2, expanded_y2), (255, 0, 0), 2)
-    
+
     face_path = os.path.join(CACHE_DIR, 'tempp.jpg')
     cv2.imwrite(face_path, vid)
     return center_face, vid
 
 def facial_recognition(video_frame, rectangle, frames, count):
     print("starting the check")
+    new_user_image_url = ""  # Ensure initialization to avoid UnboundLocalError
+
     rectangle2, processed_frame = detect_bounding_box(video_frame)
     print("check ended ", rectangle2)
+
     if rectangle2:
         rectangle = rectangle2
-    #     if rectangle is None or not is_stable_rectangle(rectangle, rectangle2):
-    #         rectangle = rectangle2
-    #         frames = 0
-    #         print("New rectangle detected, resetting frames to 0")
-    #     else:
-    #         frames += 1
-    #         print(f"Stable rectangle detected, incrementing frames: {frames}")
-    # else:
-    #     rectangle = None
-    #     frames = 0
-    #     print("No rectangle detected, resetting frames to 0")
-
-    # if frames >= 1 and rectangle:
         print("face found")
         x1, y1, x2, y2 = rectangle
         x1 = max(0, x1 - 100)
@@ -94,8 +79,7 @@ def facial_recognition(video_frame, rectangle, frames, count):
                     "role": "user",
                     "content": [
                         {"type": "text",
-                         "text": "Describe the person infront of you and their environment?"},
-
+                         "text": "Describe the person in front of you and their environment?"},
                         {"type": "image_url",
                          "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
                     ],
@@ -104,8 +88,6 @@ def facial_recognition(video_frame, rectangle, frames, count):
         )
         print(f"AI API Response: {chat_completion.choices[0].message.content}")
 
-        # check this image off of the other cached images
-        # result = DeepFace.verify("1.jpeg", "2.jpeg"
         index = 0
         output_dir = 'images'
         found = False
@@ -117,46 +99,21 @@ def facial_recognition(video_frame, rectangle, frames, count):
                 result = DeepFace.verify(face_path, filePath)
             except Exception as e:
                 print(f"Error in DeepFace.verify: {e}")
-                break
-            print(result)
             if result["verified"]:
-                print("Face found and match found")
                 found = True
                 image_url = cloudinaryClient.upload_image("abc", "people", base64_image)
                 mongoClient.addPhotoForExistingUser(index, image_url)
                 break
-
-            # if match is found, found == true and additional logic
-
             index += 1
 
-        new_user_image_url = None
         if not found:
-            # make a new entry in the mongo db database
-            print("Face found but no match found")
-            image_url = cloudinaryClient.upload_image("abc", "people", base64_image)
-            new_user_image_url = image_url
-            MongoDBClient.addPhotoForUser(None, None, [image_url])
+            new_user_image_url = cloudinaryClient.upload_image("abc", "people", base64_image)
+            mongoClient.addPhotoForUser(None, None, [new_user_image_url])
 
-            # add this image to the local cache
             face_path = os.path.join(CACHE_DIR, str(index) + '.jpg')
             cv2.imwrite(face_path, face)
 
-
-
     return processed_frame, rectangle, frames, count, new_user_image_url
-
-def is_stable_rectangle(old_rect, new_rect, tolerance=500): # High Tolerance on purpse, need to find sweet spot
-    if old_rect is None or new_rect is None:
-        return False
-    ox1, oy1, ox2, oy2 = old_rect
-    nx1, ny1, nx2, ny2 = new_rect
-    return (
-        abs(ox1 - nx1) < tolerance and
-        abs(oy1 - ny1) < tolerance and
-        abs(ox2 - nx2) < tolerance and
-        abs(oy2 - ny2) < tolerance
-    )
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
