@@ -1,32 +1,44 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { View, Image, StyleSheet, Text, Button } from "react-native";
+import { View, Image, StyleSheet, Text, Button, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 
 export default function LiveVideoScreen() {
-  const [liveFeed, setLiveFeed] = useState<string | null>(null); // Current frame
+  const [liveFeed, setLiveFeed] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
-  const timeoutRef = useRef<number | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const API_GET_FRAMES_URL = "http://localhost:5000/api/stream";
 
   const fetchFrames = async () => {
     try {
-      const response = await fetch(API_GET_FRAMES_URL);
-      const data = await response.json();
+      const response = await fetch(API_GET_FRAMES_URL, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
 
       if (data.image_path) {
+        console.log(data);
         console.log("Received image path:", data.image_path);
-        setLiveFeed(data.image_path); // Use full URL from backend
+        const timestampedPath = `${data.image_path}?t=${new Date().getTime()}`;
+        setLiveFeed(timestampedPath);
       } else {
-        setLiveFeed(null);
+        console.log("No new frame received.");
       }
     } catch (error) {
       console.error("Error fetching frames:", error);
-      setLiveFeed(null); // Reset on error
-    }
-
-    if (!isPaused) {
-      timeoutRef.current = window.setTimeout(fetchFrames, 500); // Fetch every 500ms
+    } finally {
+      if (!isPaused) {
+        timeoutRef.current = setTimeout(fetchFrames, 500);
+      }
     }
   };
 
@@ -76,12 +88,15 @@ export default function LiveVideoScreen() {
         <Button
           title={isPaused ? "Resume" : "Pause"}
           onPress={() => {
-            setIsPaused(!isPaused);
-            if (isPaused) {
-              startFetching();
-            } else {
-              stopFetching();
-            }
+            setIsPaused((prev) => {
+              const newPausedState = !prev;
+              if (newPausedState) {
+                stopFetching();
+              } else {
+                startFetching();
+              }
+              return newPausedState;
+            });
           }}
         />
       </View>
