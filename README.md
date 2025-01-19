@@ -21,12 +21,12 @@
 
 <!-- PROJECT LOGO -->
 <br />
-<div align="center">
+<div align="left">
   <a href="https://github.com/GrewalCreator/MemoryMate">
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">MemoryMate</h3>
+<h3 align="left">MemoryMate</h3>
 
   <p align="left">
     Memory Mate is a personalized recollection assistant designed to support individuals experiencing memory challenges, particularly those associated with aging. It helps users preserve their daily experiences by providing comprehensive, context-rich snapshots of moments and events that might otherwise fade over time.
