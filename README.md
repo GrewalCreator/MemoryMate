@@ -28,7 +28,7 @@
 
 <h3 align="center">MemoryMate</h3>
 
-  <p align="center">
+  <p align="left">
     Memory Mate is a personalized recollection assistant designed to support individuals experiencing memory challenges, particularly those associated with aging. It helps users preserve their daily experiences by providing comprehensive, context-rich snapshots of moments and events that might otherwise fade over time.
 
 At regular intervals, Memory Mate checks in with the user, offering a summary of their day's whereabouts and interactions. This ensures users can easily revisit and reflect on their daily experiences.
