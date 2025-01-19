@@ -130,10 +130,12 @@ def facial_recognition(video_frame, rectangle, frames, count):
 
             index += 1
 
+        new_user_image_url = None
         if not found:
             # make a new entry in the mongo db database
             print("Face found but no match found")
             image_url = cloudinaryClient.upload_image("abc", "people", base64_image)
+            new_user_image_url = image_url
             MongoDBClient.addPhotoForUser(None, None, [image_url])
 
             # add this image to the local cache
@@ -142,7 +144,7 @@ def facial_recognition(video_frame, rectangle, frames, count):
 
 
 
-    return processed_frame, rectangle, frames, count
+    return processed_frame, rectangle, frames, count, new_user_image_url
 
 def is_stable_rectangle(old_rect, new_rect, tolerance=500): # High Tolerance on purpse, need to find sweet spot
     if old_rect is None or new_rect is None:

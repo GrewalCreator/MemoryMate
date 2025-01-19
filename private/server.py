@@ -9,7 +9,7 @@ import time
 from flask import Flask, Response, request, jsonify, send_from_directory
 import os
 
-from private.database.mongo import MongoDBClient
+from database.mongo import MongoDBClient
 
 app = Flask(__name__)
 
@@ -52,7 +52,7 @@ def live_feed():
             live_feed.count = 0
 
         with frame_lock:
-            frame, live_feed.rectangle, live_feed.frames, live_feed.count = facial_recognition(
+            frame, live_feed.rectangle, live_feed.frames, live_feed.count, new_user_url = facial_recognition(
                 frame, live_feed.rectangle, live_feed.frames, live_feed.count
             )
             frame_queue.append(frame)
@@ -62,8 +62,8 @@ def live_feed():
             cv2.imwrite(image_filename, frame)
 
             with image_lock:
-                if len(pending_approval) < QUEUE_SIZE:
-                    pending_approval.append(image_filename)
+                if len(pending_approval) < QUEUE_SIZE and new_user_url:
+                    pending_approval.append(new_user_url)
 
     return jsonify({"message": "Frame received"}), 200
 
