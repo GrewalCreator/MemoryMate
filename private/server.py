@@ -92,7 +92,8 @@ def approve_image():
         return jsonify({"error": "Missing fields"}), 400
 
     # Process the approval (simulate saving the approved image details)
-    print("Approved:", data)
+    mongoDBClient = MongoDBClient()
+    mongoDBClient.approve(data['name'], data['description'])
 
     return jsonify({"message": "Image approved successfully"}), 200
 
@@ -103,7 +104,9 @@ def deny_image():
     if not data or 'action' not in data:
         return jsonify({"error": "Invalid request"}), 400
 
-    print("Image denied")
+    
+    mongoDBClient = MongoDBClient()
+    mongoDBClient.deny()
 
     return jsonify({"message": "Image denied successfully"}), 200
 

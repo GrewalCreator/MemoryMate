@@ -127,7 +127,6 @@ def facial_recognition(video_frame, rectangle, frames, count):
                 break
 
             # if match is found, found == true and additional logic
-
             index += 1
 
         new_user_image_url = None
