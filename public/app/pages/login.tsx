@@ -130,6 +130,7 @@ export default function Login() {
                 ) : (
                     <Text style={styles.buttonText}>Login</Text>
                 )}
+
             </TouchableOpacity>
             {/* <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
               <Text style={styles.signUp}>
