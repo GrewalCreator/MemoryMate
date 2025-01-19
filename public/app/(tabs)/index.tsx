@@ -101,9 +101,11 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   productLogo: {
-    height: 400,
-    width: 300,
+    height: 500,
+    width: 500,
     alignSelf: 'center',
     resizeMode: 'contain',
+    marginTop: -130, 
   },
 });
+

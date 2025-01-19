@@ -7,18 +7,18 @@ export default function LiveVideoScreen() {
   const [isPaused, setIsPaused] = useState(false);
   const timeoutRef = useRef<number | null>(null);
 
-  const API_GET_FRAMES_URL = "http://10.0.0.98:5000/api/get-frames";
+  const API_GET_FRAMES_URL = "http://localhost:5000/api/stream";
 
   const fetchFrames = async () => {
     try {
       const response = await fetch(API_GET_FRAMES_URL);
       const data = await response.json();
 
-      if (data.frames && data.frames.length > 0) {
-        const lastFrame = data.frames[data.frames.length - 1];
-        setLiveFeed(lastFrame);
+      if (data.image_path) {
+        console.log("Received image path:", data.image_path);
+        setLiveFeed(data.image_path); // Use full URL from backend
       } else {
-        setLiveFeed(null); // No frames available
+        setLiveFeed(null);
       }
     } catch (error) {
       console.error("Error fetching frames:", error);
@@ -26,7 +26,7 @@ export default function LiveVideoScreen() {
     }
 
     if (!isPaused) {
-      timeoutRef.current = window.setTimeout(fetchFrames, 100);
+      timeoutRef.current = window.setTimeout(fetchFrames, 500); // Fetch every 500ms
     }
   };
 

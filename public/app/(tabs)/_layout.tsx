@@ -7,11 +7,9 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useAuth } from '../auth/authContext'; // Access auth context
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { token } = useAuth(); // Access token from auth context
 
   return (
     <Tabs
@@ -45,18 +43,18 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.circle" color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
         name="live"
         options={{
           title: 'Live',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="livephoto.play" color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: 'Dashboard',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="rectangle.grid.2x2.fill" color={color} />,
         }}
       />
 

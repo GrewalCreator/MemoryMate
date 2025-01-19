@@ -13,32 +13,36 @@ import {
 export default function ApprovalPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [approved, setApproved] = useState<boolean | null>(null);
+  const [processing, setProcessing] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [relation, setRelation] = useState('');
 
   useEffect(() => {
-    fetchImage();
-  }, []);
+    if (!processing) {
+      fetchImage();
+    }
+  }, [processing]);
 
   const fetchImage = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://10.0.0.98:5000/api/get-image');
-  
+      const response = await fetch('http://localhost:5000/api/get-new-images');
+
       if (response.status === 204) {
         setTimeout(fetchImage, 5000); // No image available, retry after 5 seconds
         return;
       }
-  
+
       if (!response.ok) {
         throw new Error('Failed to fetch image');
       }
-  
+
       const data = await response.json();
       if (data.image_url) {
-        setImageUrl(data.image_url); // Set image URL directly
+        setImageUrl(data.image_url);
         setLoading(false);
+        setProcessing(true);  // Pause fetching until approval/denial is completed
       } else {
         setTimeout(fetchImage, 5000); // Retry if no image available
       }
@@ -47,54 +51,63 @@ export default function ApprovalPage() {
       setTimeout(fetchImage, 5000); // Retry fetching after failure
     }
   };
-  
 
-  const handleApprove = () => {
-    setApproved(true);
+  const handleApprove = async () => {
+    if (!name.trim() || !description.trim() || !relation.trim()) {
+      Alert.alert('Error', 'Please fill in all fields before approving.');
+      return;
+    }
+
+    if (!imageUrl) return;
+
+    try {
+      setProcessing(true);
+      const response = await fetch('http://localhost:5000/api/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'approve', name, description, relation, imageUrl }),
+      });
+
+      if (!response.ok) throw new Error('Failed to submit approval');
+
+      Alert.alert('Success', 'The image has been approved.');
+      resetForm();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to submit approval');
+    }
   };
 
   const handleDeny = async () => {
+    if (!imageUrl) return;
+
     try {
-      await fetch('http://10.0.0.98:5000/api/deny', {
+      setProcessing(true);
+      const response = await fetch('http://localhost:5000/api/deny', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ action: 'deny' }),
       });
+
+      if (!response.ok) throw new Error('Failed to deny image');
+
       Alert.alert('Denied', 'The image has been denied.');
-      setApproved(null);
-      fetchImage(); // Load next image
+      resetForm();
     } catch (error) {
       Alert.alert('Error', 'Failed to deny image');
     }
   };
 
-  const handleSubmit = async () => {
-    if (!name || !description) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    try {
-      const response = await fetch('http://10.0.0.98:5000/api/approve', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, description, imageUrl }),
-      });
-
-      if (!response.ok) throw new Error('Failed to submit approval');
-
-      Alert.alert('Success', 'The image has been approved.');
-      setApproved(null);
-      setName('');
-      setDescription('');
-      fetchImage(); // Load next image
-    } catch (error) {
-      Alert.alert('Error', 'Failed to submit approval');
-    }
+  const resetForm = () => {
+    setImageUrl(null);
+    setName('');
+    setDescription('');
+    setRelation('');
+    setProcessing(false);  // Resume fetching new images
+    fetchImage();  // Immediately fetch the next image or enter loading state
   };
 
   if (loading) {
@@ -112,36 +125,38 @@ export default function ApprovalPage() {
         <Image source={{ uri: imageUrl }} style={styles.image} />
       )}
 
-      {approved === null ? (
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.approveButton} onPress={handleApprove}>
-            <Text style={styles.buttonText}>Approve</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.denyButton} onPress={handleDeny}>
-            <Text style={styles.buttonText}>Deny</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter Name"
-            placeholderTextColor="#aaa"
-            value={name}
-            onChangeText={setName}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Enter Description"
-            placeholderTextColor="#aaa"
-            value={description}
-            onChangeText={setDescription}
-          />
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.buttonText}>Submit</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Name"
+          placeholderTextColor="#aaa"
+          value={name}
+          onChangeText={setName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Description"
+          placeholderTextColor="#aaa"
+          value={description}
+          onChangeText={setDescription}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Relation"
+          placeholderTextColor="#aaa"
+          value={relation}
+          onChangeText={setRelation}
+        />
+      </View>
+
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.approveButton} onPress={handleApprove}>
+          <Text style={styles.buttonText}>Approve</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.denyButton} onPress={handleDeny}>
+          <Text style={styles.buttonText}>Deny</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
