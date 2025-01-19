@@ -56,3 +56,40 @@ class MongoDBClient:
             {"$push": {"people": place}}
         )
         return result.modified_count
+    
+    def approve(self, name, description):
+        user = self.getUser()
+        user_id = user["_id"] if user else None
+    
+        for peep in user["people"]:
+            if not peep["name"]:
+                peep["name"] = name
+                peep["description"] = description
+                break
+
+        result = self.users_collection.update_one(
+            {"_id": user_id},
+            {"$set": {"people": user.people}}
+        )
+        return result.modified_count
+
+    def deny(self):
+        user = self.getUser()
+        user_id = user["_id"] if user else None
+
+        new_people = []
+        found = False
+        for peep in user["people"]:
+            if found:
+                new_people.append(peep)
+            else:
+                if not peep["name"]:
+                    found = True
+                else:
+                    new_people.append(peep)
+
+        result = self.users_collection.update_one(
+            {"_id": user_id},
+            {"$set": {"people": new_people}}
+        )
+        return result.modified_count
