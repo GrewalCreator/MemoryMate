@@ -118,18 +118,19 @@ export default function Login() {
               <Text style={styles.forgotPassword}>Forgot Password?</Text>
             </TouchableOpacity> */}
             <TouchableOpacity
-              style={[
-                styles.button,
-                { backgroundColor: isValid ? "#1E90FF" : "#A9A9A9" },
-              ]}
-              onPressIn={handleSubmit}
-              disabled={!isValid || loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Login</Text>
-              )}
+                style={[
+                    styles.button,
+                    { backgroundColor: isValid ? "#1E90FF" : "#A9A9A9" },
+                ]}
+                onPress={() => handleSubmit()}
+                disabled={!isValid || loading}
+                >
+                {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                    <Text style={styles.buttonText}>Login</Text>
+                )}
+
             </TouchableOpacity>
             {/* <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
               <Text style={styles.signUp}>
