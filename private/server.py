@@ -107,6 +107,13 @@ def deny_image():
 
     return jsonify({"message": "Image denied successfully"}), 200
 
+
+@app.route('/api/get-images', methods=['GET'])
+def get_images():
+    mongoClient = MongoDBClient()
+    allPhotos = mongoClient.getAllPhotos()
+    return jsonify(allPhotos)
+
 if __name__ == "__main__":
     # before we run the app, we cache the images
     mongoClient = MongoDBClient()
