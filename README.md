@@ -1,3 +1,4 @@
+<a id="readme-top"></a>
 # 🧠 MemoryMate
 
 [![Contributors][contributors-shield]][contributors-url]
@@ -92,7 +93,7 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email@email_client.com
+Your Name - [Gurtej Grewal]([linkedin-url]) - gurtejgrewal455@gmail.com
 
 Project Link: [https://github.com/github_username/repo_name](https://github.com/github_username/repo_name)
 
