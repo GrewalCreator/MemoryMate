@@ -69,7 +69,6 @@ def live_feed():
             image_filename = f"{UPLOAD_FOLDER}/frame.jpg"
             cv2.imwrite(image_filename, frame)
             frame_queue.append(image_filename)
-            print(image_filename)
 
             with image_lock:
                 if len(pending_approval) < QUEUE_SIZE and new_user_url:
